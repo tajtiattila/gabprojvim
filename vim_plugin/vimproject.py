@@ -9,9 +9,31 @@ import subprocess
 import ConfigParser
 import fnmatch
 import vim
-sys.path.append(os.path.join(vim.eval('$VIM'),'vimfiles','plugin'))
-from vimproject_cfg import *
 
+# these values can be overridden in either:
+#   ~/.vimproj-config
+# or
+#   $VIM/vimfiles/plugin/.vimproj-config
+VIMPROJECT_BASE = ".vimproject"
+VIMPROJECT_CFG_NAME = VIMPROJECT_BASE + ".cfg"
+VIMPROJECT_PATH_START_POS = 80
+VIMPROJECT_CTAGS_MASK_LIST = [ "*.*" ]
+VIMPROJECT_CTAGS_CMD = "ctags"
+VIMPROJECT_CTAGS_DB_NAME = VIMPROJECT_BASE + ".tags"
+VIMPROJECT_CSCOPE_MASK_LIST = [ "*.c", "*.h", "*.cpp", "*.hpp" ]
+VIMPROJECT_CSCOPE_CMD = "mlcscope"
+VIMPROJECT_CSCOPE_DB_NAME = VIMPROJECT_BASE + ".cscope.out"
+VIMPROJECT_EXPLORER_LIST_NAME = VIMPROJECT_BASE + "_explorer_list.txt"
+VIMPROJECT_GREP_LIST_NAME = VIMPROJECT_BASE + "_grep_list.txt"
+VIMPROJECT_TEMP_LIST_NAME = VIMPROJECT_BASE + "_temp_list.txt"
+
+try:
+    execfile(os.path.join(os.environ['HOME'], '.vimproj-config'))
+except:
+    try:
+        execfile(os.path.join(os.environ['VIM'], 'vimfiles/plugin', '.vimproj-config'))
+    except:
+        pass
 
 ###################################################################################################
 class project_t():
@@ -27,7 +49,9 @@ class project_t():
 		command = argv[0]
 		arg_list = argv[1:]
 		# do commands
-		if command=='init':
+		if command=='load':
+			pass
+		elif command=='init':
 			self.do_init()
 		elif command=='enter':
 			self.do_enter()
@@ -162,8 +186,7 @@ class project_t():
 		vim.command("let %s='%s'" % (self.GLOBAL_PREV_BUFFER_NAME, buf_full_name))
 		# open list file
 		vim.command(':view ' + VIMPROJECT_EXPLORER_LIST_NAME)
-		vim.command(':setlocal nomodifiable')
-		vim.command(':setlocal cursorline')
+		vim.command(':setlocal nomodifiable cursorline nowrap')
 		vim.current.window.cursor = (1, 0)
 		# try to jump to the name of the file which was in the previous buffer
 		if not buf_full_name is None:
@@ -175,9 +198,9 @@ class project_t():
 					break
 				line_idx += 1
 		# remap esc, space, enter for this buffer
-		vim.command('noremap <buffer> <silent> <Esc> :python import sys<CR>:python sys.argv=["exit"]<CR>:pyfile $VIM/vimfiles/plugin/vimproject.py<CR>')
+		vim.command('noremap <buffer> <silent> <Esc> :python project.do_exit()<CR>')
 		vim.command('map <buffer> <silent> <Space> <Esc>')
-		vim.command('noremap <buffer> <silent> <CR> :python import sys<CR>:python sys.argv=["select"]<CR>:pyfile $VIM/vimfiles/plugin/vimproject.py<CR>')
+		vim.command('noremap <buffer> <silent> <CR> :python project.do_select()<CR>')
 
 
 	#############################################################################
@@ -438,4 +461,4 @@ class project_t():
 
 ###################################################################################################
 project = project_t()
-project.do(sys.argv)
+
