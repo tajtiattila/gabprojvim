@@ -36,10 +36,10 @@ command! ProjInit   silent python project.do_init()
 command! ProjEnter  silent python project.do_enter()
 
 " grep
-command! ProjGrep   silent python project.do_grep("case part".split())
-command! ProjGrepi  silent python project.do_grep("nocase part".split())
-command! ProjGrepw  silent python project.do_grep("case whole".split())
-command! ProjGrepiw silent python project.do_grep("nocase whole".split())
+command! ProjGrep   silent python project.do_grepcursor("".split())
+command! ProjGrepi  silent python project.do_grepcursor("-i".split())
+command! ProjGrepw  silent python project.do_grepcursor("-w".split())
+command! ProjGrepiw silent python project.do_grepcursor("-i -w".split())
 
 " switch to alternate file (eg. h <-> cpp)
 command! ProjAlt    silent python project.do_alternate()
@@ -60,4 +60,5 @@ command! ProjRepl   silent python project.do_replace()
 
 " use this as grepprg
 "let g:VimProjGrepPrg = s:PyPath." xgrep "
+:let &grepprg=s:PyPath." xgrep "
 

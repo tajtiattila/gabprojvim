@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# vim: noexpandtab tabstop=4 shiftwidth=4
 ###################################################################################################
 # TODO: taglist to quickfix window
 #
@@ -8,7 +10,10 @@ import re
 import subprocess
 import ConfigParser
 import fnmatch
-import vim
+try:
+	import vim
+except:
+	pass
 
 # these values can be overridden in either:
 #   ~/.vimproj-config
@@ -26,14 +31,15 @@ VIMPROJECT_CSCOPE_DB_NAME = VIMPROJECT_BASE + ".cscope.out"
 VIMPROJECT_EXPLORER_LIST_NAME = VIMPROJECT_BASE + "_explorer_list.txt"
 VIMPROJECT_GREP_LIST_NAME = VIMPROJECT_BASE + "_grep_list.txt"
 VIMPROJECT_TEMP_LIST_NAME = VIMPROJECT_BASE + "_temp_list.txt"
+VIMPROJECT_EXTERNAL_GREP = "grep -r -n %$ ."
 
 try:
-    execfile(os.path.join(os.environ['HOME'], '.vimproj-config'))
+	execfile(os.path.join(os.environ['HOME'], '.vimproj-config'))
 except:
-    try:
-        execfile(os.path.join(os.environ['VIM'], 'vimfiles/plugin', '.vimproj-config'))
-    except:
-        pass
+	try:
+		execfile(os.path.join(os.environ['VIM'], 'vimfiles/plugin', '.vimproj-config'))
+	except:
+		pass
 
 ###################################################################################################
 class project_t():
@@ -225,41 +231,48 @@ class project_t():
 
 
 	#############################################################################
-	def do_grep(self, arg_list):
-		# set args
-		case_sensitive = None
-		whole_word = None
-		for arg in arg_list:
-			if arg=='case':
-				case_sensitive = True
-			elif arg=='nocase':
-				case_sensitive = False
-			elif arg=='whole':
-				whole_word = True
-			elif arg=='part':
-				whole_word = False
-			else:
-				sys.stderr.write("invalid grep argument: '%s'\n" % arg)
-				return
-		if case_sensitive is None or whole_word is None:
-			sys.stderr.write('missing grep argument(s)\n')
+	def do_grep(self, arg_list, redir=''):
+		if not arg_list:
 			return
+		word = arg_list[-1]
+		arg_list = arg_list[:-1]
+		# do the grep
+		retcode, output = self.execute_command('cat ' +
+				VIMPROJECT_GREP_LIST_NAME+' | xargs -0 -r -n 100 grep ' + ' '.join(arg_list) +
+				' -n ' + word + redir)
+		if not redir:
+			sys.stdout.write(output)
+		return retcode
+
+
+	#############################################################################
+	def do_grepcursor(self, arg_list):
 		# get the word under cursor
 		word = self.get_word_under_cursor()
 		if word is None:
 			return
-		# set case param
-		casestr = ''
-		wholestr = ''
-		if not case_sensitive:
-			casestr = '-i'
-		if whole_word:
-			wholestr = '-w'
-		# do the grep
-		retcode, output = self.execute_command('cat ' + VIMPROJECT_GREP_LIST_NAME+' | xargs -0 -r -n 100 grep ' + casestr + ' ' +
-													wholestr + ' -n ' + word + ' >' + VIMPROJECT_TEMP_LIST_NAME + ' 2>&1')
+		self.do_grep(arg_list + [word], ' >' + VIMPROJECT_TEMP_LIST_NAME + ' 2>&1')
 		# open grep output in quickfix window
 		vim.command(':cfile ' + VIMPROJECT_TEMP_LIST_NAME)
+
+
+	#############################################################################
+	def do_xgrep(self, arg_list):
+		if os.path.exists(VIMPROJECT_GREP_LIST_NAME):
+			self.do_grep(arg_list)
+			return
+
+		if hasattr(VIMPROJECT_EXTERNAL_GREP, '__call__'):
+			VIMPROJECT_EXTERNAL_GREP(arg_list)
+		elif isinstance(VIMPROJECT_EXTERNAL_GREP, basestring):
+			cmd = VIMPROJECT_EXTERNAL_GREP.replace('%$', ' '.join(arg_list))
+			retcode, output = self.execute_command(cmd)
+			if retcode!=0:
+				sys.stderr.write(cmd+'\ncommand returned with error:\n'+output)
+				return
+			sys.stdout.write(output)
+		else:
+			sys.stderr.write('unrecognisable VIMPROJECT_EXTERNAL_GREP, should be function or string\n')
 
 
 	#############################################################################
@@ -462,3 +475,7 @@ class project_t():
 ###################################################################################################
 project = project_t()
 
+if __name__ == "__main__":
+	v = sys.argv[1:]
+	if v and v[0] == 'xgrep':
+		project.do_xgrep(v[1:])
