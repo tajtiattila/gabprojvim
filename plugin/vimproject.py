@@ -194,9 +194,12 @@ class project_t():
 		buf_full_name = vim.current.buffer.name
 		if buf_full_name is None:
 			buf_full_name = ''
+			exitcmd = ':bdelete'
+		else:
+			exitcmd = ':keepalt edit ' + buf_full_name
 		vim.command("let %s='%s'" % (self.GLOBAL_PREV_BUFFER_NAME, buf_full_name))
 		# open list file
-		vim.command(':view ' + VIMPROJECT_EXPLORER_LIST_NAME)
+		vim.command(':keepalt view ' + VIMPROJECT_EXPLORER_LIST_NAME)
 		vim.command(':setlocal nomodifiable cursorline nowrap bufhidden=delete')
 		vim.current.window.cursor = (1, 0)
 		# try to jump to the name of the file which was in the previous buffer
@@ -209,7 +212,7 @@ class project_t():
 					break
 				line_idx += 1
 		# remap esc, space, enter for this buffer
-		vim.command('noremap <buffer> <silent> <Esc> :bd<CR>')
+		vim.command('noremap <buffer> <silent> <Esc> ' + exitcmd + '<CR>')
 		vim.command('map <buffer> <silent> <Space> <Esc>')
 		vim.command('noremap <buffer> <silent> <CR> :python project.do_select()<CR>')
 
