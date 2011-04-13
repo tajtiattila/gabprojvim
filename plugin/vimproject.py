@@ -32,6 +32,7 @@ VIMPROJECT_EXPLORER_LIST_NAME = VIMPROJECT_BASE + "_explorer_list.txt"
 VIMPROJECT_GREP_LIST_NAME = VIMPROJECT_BASE + "_grep_list.txt"
 VIMPROJECT_TEMP_LIST_NAME = VIMPROJECT_BASE + "_temp_list.txt"
 VIMPROJECT_EXTERNAL_GREP = "grep -r -n %$ ."
+VIMPROJECT_PATH_SEP = None
 
 try:
 	execfile(os.path.join(os.environ['HOME'], '.vimproj-config'))
@@ -40,6 +41,8 @@ except:
 		execfile(os.path.join(os.environ['VIM'], 'vimfiles/plugin', '.vimproj-config'))
 	except:
 		pass
+
+assert VIMPROJECT_PATH_SEP in [None, os.sep, os.altsep]
 
 ###################################################################################################
 class project_t():
@@ -121,10 +124,10 @@ class project_t():
 		for dir_name in dirs_list:
 			if len(dir_name)==0:
 				continue
-			dir_space_count = len(os.path.abspath(dir_name).split('\\')) * 2
+			dir_space_count = len(os.path.abspath(dir_name).split(os.sep)) * 2
 			for root_name, dir_name_list, file_name_list in os.walk(dir_name):
 				norm_root_name = os.path.normpath(root_name)
-				space_count = len(os.path.abspath(root_name).split('\\')) * 2 - dir_space_count + 2
+				space_count = len(os.path.abspath(root_name).split(os.sep)) * 2 - dir_space_count + 2
 				explorer_appended = False
 				for file_name in file_name_list:
 					# decide if the file is needed into project
@@ -147,6 +150,8 @@ class project_t():
 							needed = not needed
 					# add file name to various lists
 					if needed:
+						if VIMPROJECT_PATH_SEP:
+							abs_file_name = abs_file_name.replace(os.sep, VIMPROJECT_PATH_SEP)
 						explorer_list += ' '*space_count + file_name + ' '*(VIMPROJECT_PATH_START_POS-space_count-len(file_name)) + abs_file_name + '\n'
 						explorer_appended = True
 						grep_list += abs_file_name.replace('\\','/') + '\0'
