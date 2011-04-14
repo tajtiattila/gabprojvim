@@ -23,9 +23,21 @@ class project_t():
 	WORD_LETTERS = '_' + string.ascii_letters + string.digits
 	GLOBAL_PREV_BUFFER_NAME = 'g:vimproject_prev_buffer_name'
 
-	cfgentries = """CFG_NAME PATH_START_POS CTAGS_MASK_LIST CTAGS_CMD
-		CTAGS_DB_NAME CSCOPE_MASK_LIST CSCOPE_CMD CSCOPE_DB_NAME EXPLORER_LIST_NAME
-		GREP_LIST_NAME TEMP_LIST_NAME EXTERNAL_GREP PATH_SEP""".split()
+	cfgvars = """
+		CFG_NAME
+		PATH_START_POS
+		CTAGS_MASKS
+		CTAGS_CMD
+		CTAGS_DB_NAME
+		CSCOPE_MASKS
+		CSCOPE_CMD
+		CSCOPE_DB_NAME
+		EXPLORER_LIST_NAME
+		GREP_LIST_NAME
+		TEMP_LIST_NAME
+		EXTERNAL_GREP
+		PATH_SEP
+		""".split()
 
 
 	#############################################################################
@@ -35,25 +47,10 @@ class project_t():
 
 	#############################################################################
 	def load_config(self):
-		cfgvars = """
-			CFG_NAME
-			PATH_START_POS
-			CTAGS_MASKS
-			CTAGS_CMD
-			CTAGS_DB_NAME
-			CSCOPE_MASKS
-			CSCOPE_CMD
-			CSCOPE_DB_NAME
-			EXPLORER_LIST_NAME
-			GREP_LIST_NAME
-			TEMP_LIST_NAME
-			EXTERNAL_GREP
-			PATH_SEP
-			""".split()
 		class Config:
 			pass
 		self.config = Config
-		for varname in cfgvars:
+		for varname in self.cfgvars:
 			value = vim.eval('g:VIMPROJECT_' + varname)
 			setattr(self.config, varname, value)
 		self.config.PATH_START_POS = int(self.config.PATH_START_POS)
