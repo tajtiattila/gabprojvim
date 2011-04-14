@@ -35,36 +35,31 @@ class project_t():
 
 	#############################################################################
 	def load_config(self):
-		BASE = ".vimproject"
-		cfgdefault = dict(
-			CFG_NAME = BASE + ".cfg",
-			PATH_START_POS = 80,
-			CTAGS_MASKS = "*.*",
-			CTAGS_CMD = "ctags",
-			CTAGS_DB_NAME = BASE + ".tags",
-			CSCOPE_MASKS = "*.c *.h *.cpp *.hpp",
-			CSCOPE_CMD = "mlcscope",
-			CSCOPE_DB_NAME = BASE + ".cscope.out",
-			EXPLORER_LIST_NAME = BASE + "_explorer_list.txt",
-			GREP_LIST_NAME = BASE + "_grep_list.txt",
-			TEMP_LIST_NAME = BASE + "_temp_list.txt",
-			EXTERNAL_GREP = "grep -r -n %$ .",
-			PATH_SEP = None
-		)
+		cfgvars = """
+			CFG_NAME
+			PATH_START_POS
+			CTAGS_MASKS
+			CTAGS_CMD
+			CTAGS_DB_NAME
+			CSCOPE_MASKS
+			CSCOPE_CMD
+			CSCOPE_DB_NAME
+			EXPLORER_LIST_NAME
+			GREP_LIST_NAME
+			TEMP_LIST_NAME
+			EXTERNAL_GREP
+			PATH_SEP
+			""".split()
 		class Config:
 			pass
 		self.config = Config
-		for key, defval in cfgdefault.items():
-			try:
-				value = vim.eval('g:VIMPROJECT_' + key)
-			except vim.error:
-				value = defval
-			setattr(self.config, key, value)
-
+		for varname in cfgvars:
+			value = vim.eval('g:VIMPROJECT_' + varname)
+			setattr(self.config, varname, value)
 		self.config.PATH_START_POS = int(self.config.PATH_START_POS)
 		self.config.CTAGS_MASK_LIST = self.config.CTAGS_MASKS.split()
 		self.config.CSCOPE_MASK_LIST = self.config.CSCOPE_MASKS.split()
-		assert self.config.PATH_SEP in [None, '', os.sep, os.altsep]
+		assert self.config.PATH_SEP in ['', os.sep, os.altsep]
 
 
 
