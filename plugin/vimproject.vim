@@ -63,6 +63,8 @@ command! ProjAlt    silent python project.do_alternate()
 " search&replace w/ words under cursor
 command! ProjRepl   silent python project.do_replace()
 
+command! -nargs=1 Grep silent python project.do_grepargs("<args>".split())
+
 :ProjLoad
 
 :map <unique> <LocalLeader>pi :ProjInit<CR>
@@ -76,5 +78,5 @@ command! ProjRepl   silent python project.do_replace()
 
 " use this as grepprg
 "let g:VimProjGrepPrg = s:PyPath." xgrep "
-:let &grepprg=s:PyPath." xgrep "
+":let &grepprg=s:PyPath." xgrep "
 
