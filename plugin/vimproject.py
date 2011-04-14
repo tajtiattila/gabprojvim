@@ -15,35 +15,6 @@ try:
 except:
 	pass
 
-# these values can be overridden in either:
-#   ~/.vimproj-config
-# or
-#   $VIM/vimfiles/plugin/.vimproj-config
-VIMPROJECT_BASE = ".vimproject"
-VIMPROJECT_CFG_NAME = VIMPROJECT_BASE + ".cfg"
-VIMPROJECT_PATH_START_POS = 80
-VIMPROJECT_CTAGS_MASK_LIST = [ "*.*" ]
-VIMPROJECT_CTAGS_CMD = "ctags"
-VIMPROJECT_CTAGS_DB_NAME = VIMPROJECT_BASE + ".tags"
-VIMPROJECT_CSCOPE_MASK_LIST = [ "*.c", "*.h", "*.cpp", "*.hpp" ]
-VIMPROJECT_CSCOPE_CMD = "mlcscope"
-VIMPROJECT_CSCOPE_DB_NAME = VIMPROJECT_BASE + ".cscope.out"
-VIMPROJECT_EXPLORER_LIST_NAME = VIMPROJECT_BASE + "_explorer_list.txt"
-VIMPROJECT_GREP_LIST_NAME = VIMPROJECT_BASE + "_grep_list.txt"
-VIMPROJECT_TEMP_LIST_NAME = VIMPROJECT_BASE + "_temp_list.txt"
-VIMPROJECT_EXTERNAL_GREP = "grep -r -n %$ ."
-VIMPROJECT_PATH_SEP = None
-
-try:
-	execfile(os.path.join(os.environ['HOME'], '.vimproj-config'))
-except:
-	try:
-		execfile(os.path.join(os.environ['VIM'], 'vimfiles/plugin', '.vimproj-config'))
-	except:
-		pass
-
-assert VIMPROJECT_PATH_SEP in [None, os.sep, os.altsep]
-
 ###################################################################################################
 class project_t():
 
@@ -51,6 +22,50 @@ class project_t():
 	#############################################################################
 	WORD_LETTERS = '_' + string.ascii_letters + string.digits
 	GLOBAL_PREV_BUFFER_NAME = 'g:vimproject_prev_buffer_name'
+
+	cfgentries = """CFG_NAME PATH_START_POS CTAGS_MASK_LIST CTAGS_CMD
+		CTAGS_DB_NAME CSCOPE_MASK_LIST CSCOPE_CMD CSCOPE_DB_NAME EXPLORER_LIST_NAME
+		GREP_LIST_NAME TEMP_LIST_NAME EXTERNAL_GREP PATH_SEP""".split()
+
+
+	#############################################################################
+	def __init__(self):
+		self.load_config()
+
+
+	#############################################################################
+	def load_config(self):
+		BASE = ".vimproject"
+		cfgdefault = dict(
+			CFG_NAME = BASE + ".cfg",
+			PATH_START_POS = 80,
+			CTAGS_MASKS = "*.*",
+			CTAGS_CMD = "ctags",
+			CTAGS_DB_NAME = BASE + ".tags",
+			CSCOPE_MASKS = "*.c *.h *.cpp *.hpp",
+			CSCOPE_CMD = "mlcscope",
+			CSCOPE_DB_NAME = BASE + ".cscope.out",
+			EXPLORER_LIST_NAME = BASE + "_explorer_list.txt",
+			GREP_LIST_NAME = BASE + "_grep_list.txt",
+			TEMP_LIST_NAME = BASE + "_temp_list.txt",
+			EXTERNAL_GREP = "grep -r -n %$ .",
+			PATH_SEP = None
+		)
+		class Config:
+			pass
+		self.config = Config
+		for key, defval in cfgdefault.items():
+			try:
+				value = vim.eval('g:VIMPROJECT_' + key)
+			except vim.error:
+				value = defval
+			setattr(self.config, key, value)
+
+		self.config.PATH_START_POS = int(self.config.PATH_START_POS)
+		self.config.CTAGS_MASK_LIST = self.config.CTAGS_MASKS.split()
+		self.config.CSCOPE_MASK_LIST = self.config.CSCOPE_MASKS.split()
+		assert self.config.PATH_SEP in [None, '', os.sep, os.altsep]
+
 
 
 	#############################################################################
@@ -115,11 +130,11 @@ class project_t():
 		ctags_list = ''
 		cscope_list = ''
 		# pre cleanup
-		self.try_remove_file(VIMPROJECT_EXPLORER_LIST_NAME)
-		self.try_remove_file(VIMPROJECT_GREP_LIST_NAME)
-		self.try_remove_file(VIMPROJECT_TEMP_LIST_NAME)
-		self.try_remove_file(VIMPROJECT_CTAGS_DB_NAME)
-		self.try_remove_file(VIMPROJECT_CSCOPE_DB_NAME)
+		self.try_remove_file(self.config.EXPLORER_LIST_NAME)
+		self.try_remove_file(self.config.GREP_LIST_NAME)
+		self.try_remove_file(self.config.TEMP_LIST_NAME)
+		self.try_remove_file(self.config.CTAGS_DB_NAME)
+		self.try_remove_file(self.config.CSCOPE_DB_NAME)
 		# walk all dirs and collect files
 		for dir_name in dirs_list:
 			if len(dir_name)==0:
@@ -150,42 +165,42 @@ class project_t():
 							needed = not needed
 					# add file name to various lists
 					if needed:
-						if VIMPROJECT_PATH_SEP:
-							abs_file_name = abs_file_name.replace(os.sep, VIMPROJECT_PATH_SEP)
-						explorer_list += ' '*space_count + file_name + ' '*(VIMPROJECT_PATH_START_POS-space_count-len(file_name)) + abs_file_name + '\n'
+						if self.config.PATH_SEP:
+							abs_file_name = abs_file_name.replace(os.sep, self.config.PATH_SEP)
+						explorer_list += ' '*space_count + file_name + ' '*(self.config.PATH_START_POS-space_count-len(file_name)) + abs_file_name + '\n'
 						explorer_appended = True
 						grep_list += abs_file_name.replace('\\','/') + '\0'
-						for ctags_mask in VIMPROJECT_CTAGS_MASK_LIST:
+						for ctags_mask in self.config.CTAGS_MASK_LIST:
 							if fnmatch.fnmatch(file_name,ctags_mask):
 								ctags_list += abs_file_name + '\n'
 								break
 						if use_cscope:
-							for cscope_mask in VIMPROJECT_CSCOPE_MASK_LIST:
+							for cscope_mask in self.config.CSCOPE_MASK_LIST:
 								if fnmatch.fnmatch(file_name,cscope_mask):
 									cscope_list += abs_file_name + '\n'
 									break
 				if explorer_appended:
-					explorer_list += '-' * (VIMPROJECT_PATH_START_POS + 20) + '\n'
+					explorer_list += '-' * (self.config.PATH_START_POS + 20) + '\n'
 		# write simple lists
-		self.write_list(explorer_list, VIMPROJECT_EXPLORER_LIST_NAME)
-		self.write_list(grep_list, VIMPROJECT_GREP_LIST_NAME)
+		self.write_list(explorer_list, self.config.EXPLORER_LIST_NAME)
+		self.write_list(grep_list, self.config.GREP_LIST_NAME)
 		# generate ctags db
-		if len(VIMPROJECT_CTAGS_CMD)>0:
-			self.write_list(ctags_list, VIMPROJECT_TEMP_LIST_NAME)
-			retcode, output = self.execute_command(VIMPROJECT_CTAGS_CMD + ' -L ' + VIMPROJECT_TEMP_LIST_NAME + ' -f ' + VIMPROJECT_CTAGS_DB_NAME)
+		if len(self.config.CTAGS_CMD)>0:
+			self.write_list(ctags_list, self.config.TEMP_LIST_NAME)
+			retcode, output = self.execute_command(self.config.CTAGS_CMD + ' -L ' + self.config.TEMP_LIST_NAME + ' -f ' + self.config.CTAGS_DB_NAME)
 			if retcode!=0:
 				sys.stderr.write('ctags exec error:\n' + output)
 				return
 		# generate cscope db
 		if use_cscope:
-			if len(VIMPROJECT_CSCOPE_CMD)>0:
-				self.write_list(cscope_list, VIMPROJECT_TEMP_LIST_NAME)
-				retcode, output = self.execute_command(VIMPROJECT_CSCOPE_CMD + ' -b -i ' + VIMPROJECT_TEMP_LIST_NAME + ' -f ' + VIMPROJECT_CSCOPE_DB_NAME)
+			if len(self.config.CSCOPE_CMD)>0:
+				self.write_list(cscope_list, self.config.TEMP_LIST_NAME)
+				retcode, output = self.execute_command(self.config.CSCOPE_CMD + ' -b -i ' + self.config.TEMP_LIST_NAME + ' -f ' + self.config.CSCOPE_DB_NAME)
 				if retcode!=0:
 					sys.stderr.write('cscope exec error:\n' + output)
 					return
 		# post cleanup
-		self.try_remove_file(VIMPROJECT_TEMP_LIST_NAME)
+		self.try_remove_file(self.config.TEMP_LIST_NAME)
 
 
 	#############################################################################
@@ -199,7 +214,7 @@ class project_t():
 			exitcmd = ':keepalt edit ' + buf_full_name
 		vim.command("let %s='%s'" % (self.GLOBAL_PREV_BUFFER_NAME, buf_full_name))
 		# open list file
-		vim.command(':keepalt view ' + VIMPROJECT_EXPLORER_LIST_NAME)
+		vim.command(':keepalt view ' + self.config.EXPLORER_LIST_NAME)
 		vim.command(':setlocal nomodifiable cursorline nowrap bufhidden=delete')
 		vim.current.window.cursor = (1, 0)
 		# try to jump to the name of the file which was in the previous buffer
@@ -207,7 +222,7 @@ class project_t():
 			buf_full_name = buf_full_name.lower()
 			line_idx = 1
 			for line in vim.current.buffer[:]:
-				if line[VIMPROJECT_PATH_START_POS:].lower()==buf_full_name:
+				if line[self.config.PATH_START_POS:].lower()==buf_full_name:
 					vim.current.window.cursor = (line_idx, 0)
 					break
 				line_idx += 1
@@ -224,7 +239,7 @@ class project_t():
 			return
 		# set previous buffer so alternate will work
 		prev_buf_full_name = vim.eval(self.GLOBAL_PREV_BUFFER_NAME)
-		path = vim.current.line[VIMPROJECT_PATH_START_POS:]
+		path = vim.current.line[self.config.PATH_START_POS:]
 		if prev_buf_full_name!='' and prev_buf_full_name!=path:
 			vim.command(':edit ' + prev_buf_full_name)
 		vim.command(':edit ' + path)
@@ -239,7 +254,7 @@ class project_t():
 		arg_list = arg_list[:-1]
 		# do the grep
 		retcode, output = self.execute_command('cat ' +
-				VIMPROJECT_GREP_LIST_NAME+' | xargs -0 -r -n 100 grep ' + ' '.join(arg_list) +
+				self.config.GREP_LIST_NAME+' | xargs -0 -r -n 100 grep ' + ' '.join(arg_list) +
 				' -n ' + word + redir)
 		if not redir:
 			sys.stdout.write(output)
@@ -252,28 +267,28 @@ class project_t():
 		word = self.get_word_under_cursor()
 		if word is None:
 			return
-		self.do_grep(arg_list + [word], ' >' + VIMPROJECT_TEMP_LIST_NAME + ' 2>&1')
+		self.do_grep(arg_list + [word], ' >' + self.config.TEMP_LIST_NAME + ' 2>&1')
 		# open grep output in quickfix window
-		vim.command(':cfile ' + VIMPROJECT_TEMP_LIST_NAME)
+		vim.command(':cfile ' + self.config.TEMP_LIST_NAME)
 
 
 	#############################################################################
 	def do_xgrep(self, arg_list):
-		if os.path.exists(VIMPROJECT_GREP_LIST_NAME):
+		if os.path.exists(self.config.GREP_LIST_NAME):
 			self.do_grep(arg_list)
 			return
 
-		if hasattr(VIMPROJECT_EXTERNAL_GREP, '__call__'):
-			VIMPROJECT_EXTERNAL_GREP(arg_list)
-		elif isinstance(VIMPROJECT_EXTERNAL_GREP, basestring):
-			cmd = VIMPROJECT_EXTERNAL_GREP.replace('%$', ' '.join(arg_list))
+		if hasattr(self.config.EXTERNAL_GREP, '__call__'):
+			self.config.EXTERNAL_GREP(arg_list)
+		elif isinstance(self.config.EXTERNAL_GREP, basestring):
+			cmd = self.config.EXTERNAL_GREP.replace('%$', ' '.join(arg_list))
 			retcode, output = self.execute_command(cmd)
 			if retcode!=0:
 				sys.stderr.write(cmd+'\ncommand returned with error:\n'+output)
 				return
 			sys.stdout.write(output)
 		else:
-			sys.stderr.write('unrecognisable VIMPROJECT_EXTERNAL_GREP, should be function or string\n')
+			sys.stderr.write('unrecognisable self.config.EXTERNAL_GREP, should be function or string\n')
 
 
 	#############################################################################
@@ -290,9 +305,9 @@ class project_t():
 		idx = 0
 		name_ext_list = []
 		name_list = []
-		for line in file(VIMPROJECT_EXPLORER_LIST_NAME):
+		for line in file(self.config.EXPLORER_LIST_NAME):
 			idx += 1
-			line_full_name = line[VIMPROJECT_PATH_START_POS:].strip().lower()
+			line_full_name = line[self.config.PATH_START_POS:].strip().lower()
 			if line_full_name==buf_full_name:
 				cur_idx = idx
 				continue
@@ -330,9 +345,9 @@ class project_t():
 		if word0 is None:
 			return
 		# do the grep
-		retcode, output = self.execute_command('cat ' + VIMPROJECT_GREP_LIST_NAME + ' | xargs -0 -r -n 100 grep -n ' + word0 +
-													' >' + VIMPROJECT_TEMP_LIST_NAME + ' 2>&1')
-		vim.command(':cfile ' + VIMPROJECT_TEMP_LIST_NAME)
+		retcode, output = self.execute_command('cat ' + self.config.GREP_LIST_NAME + ' | xargs -0 -r -n 100 grep -n ' + word0 +
+													' >' + self.config.TEMP_LIST_NAME + ' 2>&1')
+		vim.command(':cfile ' + self.config.TEMP_LIST_NAME)
 		if len(vim.current.line)==0:
 			return
 		# replace words in lines
@@ -375,11 +390,11 @@ class project_t():
 		if word is None:
 			return
 		# start the output file
-		tempfile = file(VIMPROJECT_TEMP_LIST_NAME, 'wt')
+		tempfile = file(self.config.TEMP_LIST_NAME, 'wt')
 		tempfile.write('*** %s %s ***\n' % (word, cscope_cmd_names[cmd_idx]))
 		cscope_cmd = cscope_cmd_codes[cmd_idx]
-		retcode, output = self.execute_command(VIMPROJECT_CSCOPE_CMD + ' -d -L -f ' + VIMPROJECT_CSCOPE_DB_NAME +
-												' -' + cscope_cmd + ' ' + word + ' > ' + VIMPROJECT_TEMP_LIST_NAME, False)
+		retcode, output = self.execute_command(self.config.CSCOPE_CMD + ' -d -L -f ' + self.config.CSCOPE_DB_NAME +
+												' -' + cscope_cmd + ' ' + word + ' > ' + self.config.TEMP_LIST_NAME, False)
 		if retcode!=0:
 			sys.stderr.write('cscope returned with error:\n'+output)
 			return
@@ -395,7 +410,7 @@ class project_t():
 			tempfile.write('%s:%s:%s\n' % (match_obj.group('filename'), match_obj.group('linenum'), match_obj.group('line')))
 		tempfile = None
 		# open tag output in quickfix window
-		vim.command(':cfile '+VIMPROJECT_TEMP_LIST_NAME)
+		vim.command(':cfile '+self.config.TEMP_LIST_NAME)
 
 
 	#############################################################################
@@ -474,7 +489,19 @@ class project_t():
 
 
 ###################################################################################################
-project = project_t()
+
+class ConfigRefresher(object):
+	def __init__(self, obj):
+		self.obj = obj
+	def __getattr__(self, name):
+		attr = getattr(self.obj, name)
+		self.obj.load_config()
+		return attr
+
+
+###################################################################################################
+project = ConfigRefresher(project_t())
+
 
 if __name__ == "__main__":
 	v = sys.argv[1:]

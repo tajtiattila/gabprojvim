@@ -14,6 +14,22 @@ if (v:progname == "ex")
    finish
 endif
 
+" Default configuration
+let s:BASE = ".vimproject"
+let g:VIMPROJECT_CFG_NAME = s:BASE . ".cfg"
+let g:VIMPROJECT_PATH_START_POS = 80
+let g:VIMPROJECT_CTAGS_MASKS = "*.*"
+let g:VIMPROJECT_CTAGS_CMD = "ctags"
+let g:VIMPROJECT_CTAGS_DB_NAME = s:BASE . ".tags"
+let g:VIMPROJECT_CSCOPE_MASKS = "*.c *.h *.cpp *.hpp"
+let g:VIMPROJECT_CSCOPE_CMD = "mlcscope"
+let g:VIMPROJECT_CSCOPE_DB_NAME = s:BASE . ".cscope.out"
+let g:VIMPROJECT_EXPLORER_LIST_NAME = s:BASE . "_explorer_list.txt"
+let g:VIMPROJECT_GREP_LIST_NAME = s:BASE . "_grep_list.txt"
+let g:VIMPROJECT_TEMP_LIST_NAME = s:BASE . "_temp_list.txt"
+let g:VIMPROJECT_EXTERNAL_GREP = "grep -r -n %$ ."
+let g:VIMPROJECT_PATH_SEP = ''
+
 " Find ourselves (the python file) in the runtime
 let s:PyName = "vimproject.py"
 let s:PyPath = $VIMPROJDEVDIR
