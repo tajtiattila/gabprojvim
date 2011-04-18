@@ -91,7 +91,7 @@ class project_t():
 	def do_init(self):
 		# read cfg
 		self.cfg_parser = ConfigParser.SafeConfigParser()
-		self.cfg_parser.read(VIMPROJECT_CFG_NAME)
+		self.cfg_parser.read(self.config.CFG_NAME)
 		# read options
 		use_cscope = self.get_option('cscope', 'no') == 'yes'
 		# read dirs
