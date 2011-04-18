@@ -211,7 +211,7 @@ class project_t():
 		vim.current.window.cursor = (1, 0)
 		# try to jump to the name of the file which was in the previous buffer
 		if not buf_full_name is None:
-			buf_full_name = buf_full_name.lower()
+			buf_full_name = buf_full_name.lower().replace(os.sep, self.config.PATH_SEP)
 			line_idx = 1
 			for line in vim.current.buffer[:]:
 				if line[self.config.PATH_START_POS:].lower()==buf_full_name:
