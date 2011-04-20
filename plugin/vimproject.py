@@ -117,10 +117,10 @@ class project_t():
 			star = mask.find('*')!=-1
 			mask_list.append((op, dot, star, mask))
 		# init lists
-		explorer_list = ''
-		grep_list = ''
-		ctags_list = ''
-		cscope_list = ''
+		explorer_list = []
+		grep_list = []
+		ctags_list = []
+		cscope_list = []
 		# pre cleanup
 		self.try_remove_file(self.config.EXPLORER_LIST_NAME)
 		self.try_remove_file(self.config.GREP_LIST_NAME)
@@ -159,20 +159,20 @@ class project_t():
 					if needed:
 						if self.config.PATH_SEP:
 							abs_file_name = abs_file_name.replace(os.sep, self.config.PATH_SEP)
-						explorer_list += ' '*space_count + file_name + ' '*(self.config.PATH_START_POS-space_count-len(file_name)) + abs_file_name + '\n'
+						explorer_list += [' '*space_count + file_name + ' '*(self.config.PATH_START_POS-space_count-len(file_name)) + abs_file_name + '\n']
 						explorer_appended = True
-						grep_list += abs_file_name.replace('\\','/') + '\0'
+						grep_list += [abs_file_name.replace('\\','/') + '\0']
 						for ctags_mask in self.config.CTAGS_MASK_LIST:
 							if fnmatch.fnmatch(file_name,ctags_mask):
-								ctags_list += abs_file_name + '\n'
+								ctags_list += [abs_file_name + '\n']
 								break
 						if use_cscope:
 							for cscope_mask in self.config.CSCOPE_MASK_LIST:
 								if fnmatch.fnmatch(file_name,cscope_mask):
-									cscope_list += abs_file_name + '\n'
+									cscope_list += [abs_file_name + '\n']
 									break
 				if explorer_appended:
-					explorer_list += '-' * (self.config.PATH_START_POS + 20) + '\n'
+					explorer_list += ['-' * (self.config.PATH_START_POS + 20) + '\n']
 		# write simple lists
 		self.write_list(explorer_list, self.config.EXPLORER_LIST_NAME)
 		self.write_list(grep_list, self.config.GREP_LIST_NAME)
@@ -430,7 +430,7 @@ class project_t():
 	#############################################################################
 	def write_list(self, wlist, name):
 		list_file = file(name, 'wt')
-		list_file.write(wlist)
+		list_file.writelines(wlist)
 		list_file.close()
 
 
