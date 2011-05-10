@@ -15,6 +15,15 @@ try:
 except:
 	pass
 
+def grepescape_win(x):
+	return '"' + x.replace('\\', '\\\\').replace('"', '""') + '"'
+def grepescape_nix(x):
+	return x.replace('\\', '\\\\').replace(' ', '\\ ')
+if os.name == 'nt':
+	grepescape = grepescape_win
+else:
+	grepescape = grepescape_nix
+
 ###################################################################################################
 class project_t():
 
@@ -249,7 +258,7 @@ class project_t():
 		# do the grep
 		retcode, output = self.execute_command('cat ' +
 				self.config.GREP_LIST_NAME+' | xargs -0 -r -n 100 grep ' + ' '.join(arg_list) +
-				' -n ' + word + redir)
+				' -n ' + grepescape(word) + redir)
 		if not redir:
 			sys.stdout.write(output)
 		return retcode
@@ -261,12 +270,19 @@ class project_t():
 		word = self.get_word_under_cursor()
 		if word is None:
 			return
-		self.do_grepargs(arg_list + [word])
+		self.do_grep(arg_list, ' >' + self.config.TEMP_LIST_NAME + ' 2>&1')
+		self.show_grep_results()
 
 
 	#############################################################################
-	def do_grepargs(self, arg_list):
+	def do_grepargs(self, *arg_list):
 		self.do_grep(arg_list, ' >' + self.config.TEMP_LIST_NAME + ' 2>&1')
+		vim.command(':let @/=' + repr(arg_list[-1]))
+		self.show_grep_results()
+
+
+	#############################################################################
+	def show_grep_results(self):
 		# open grep output in quickfix window
 		vim.command(':cfile ' + self.config.TEMP_LIST_NAME)
 

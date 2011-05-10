@@ -63,7 +63,7 @@ command! ProjAlt    silent python project.do_alternate()
 " search&replace w/ words under cursor
 command! ProjRepl   silent python project.do_replace()
 
-command! -nargs=1 Grep silent python project.do_grepargs("<args>".split())
+command! -nargs=* Grep silent python project.do_grepargs(<f-args>)
 
 :ProjLoad
 
