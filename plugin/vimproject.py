@@ -127,6 +127,8 @@ class project_t():
 		self.try_remove_file(self.config.TEMP_LIST_NAME)
 		self.try_remove_file(self.config.CTAGS_DB_NAME)
 		self.try_remove_file(self.config.CSCOPE_DB_NAME)
+		def fnfilt(s):
+			return s.lower()
 		# walk all dirs and collect files
 		for dir_name in dirs_list:
 			if len(dir_name)==0:
@@ -138,7 +140,7 @@ class project_t():
 				explorer_appended = False
 				for file_name in file_name_list:
 					# decide if the file is needed into project
-					full_file_name = os.path.join(norm_root_name, file_name)
+					full_file_name = fnfilt(os.path.join(norm_root_name, file_name))
 					abs_file_name = os.path.abspath(os.path.join(norm_root_name, file_name))
 					needed = False
 					for op, dot, star, mask in mask_list:
