@@ -46,6 +46,7 @@ class project_t():
 		TEMP_LIST_NAME
 		EXTERNAL_GREP
 		PATH_SEP
+		RESULTFILECMD
 		""".split()
 
 
@@ -65,8 +66,17 @@ class project_t():
 		self.config.PATH_START_POS = int(self.config.PATH_START_POS)
 		self.config.CTAGS_MASK_LIST = self.config.CTAGS_MASKS.split()
 		self.config.CSCOPE_MASK_LIST = self.config.CSCOPE_MASKS.split()
+		if '<filename>' not in self.config.RESULTFILECMD:
+			self.config.RESULTFILECMD += ' <filename>'
+		self.config.RESULTFILECMD = self.config.RESULTFILECMD.splitlines()
 		assert self.config.PATH_SEP in ['', os.sep, os.altsep]
 
+
+	#############################################################################
+	def show_results(self, filename=None):
+		filename = filename or self.config.TEMP_LIST_NAME
+		for line in self.config.RESULTFILECMD:
+			vim.command(line.replace('<filename>', filename))
 
 
 	#############################################################################
@@ -271,20 +281,14 @@ class project_t():
 		if word is None:
 			return
 		self.do_grep(arg_list, ' >' + self.config.TEMP_LIST_NAME + ' 2>&1')
-		self.show_grep_results()
+		self.show_results()
 
 
 	#############################################################################
 	def do_grepargs(self, *arg_list):
 		self.do_grep(arg_list, ' >' + self.config.TEMP_LIST_NAME + ' 2>&1')
 		vim.command(':let @/=' + repr(arg_list[-1]))
-		self.show_grep_results()
-
-
-	#############################################################################
-	def show_grep_results(self):
-		# open grep output in quickfix window
-		vim.command(':cfile ' + self.config.TEMP_LIST_NAME)
+		self.show_results()
 
 
 	#############################################################################
@@ -362,7 +366,7 @@ class project_t():
 		# do the grep
 		retcode, output = self.execute_command('cat ' + self.config.GREP_LIST_NAME + ' | xargs -0 -r -n 100 grep -n ' + word0 +
 													' >' + self.config.TEMP_LIST_NAME + ' 2>&1')
-		vim.command(':cfile ' + self.config.TEMP_LIST_NAME)
+		self.show_results()
 		if len(vim.current.line)==0:
 			return
 		# replace words in lines
@@ -425,7 +429,7 @@ class project_t():
 			tempfile.write('%s:%s:%s\n' % (match_obj.group('filename'), match_obj.group('linenum'), match_obj.group('line')))
 		tempfile = None
 		# open tag output in quickfix window
-		vim.command(':cfile '+self.config.TEMP_LIST_NAME)
+		self.show_results()
 
 
 	#############################################################################

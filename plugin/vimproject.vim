@@ -29,6 +29,7 @@ let g:VIMPROJECT_GREP_LIST_NAME = s:BASE . "_grep_list.txt"
 let g:VIMPROJECT_TEMP_LIST_NAME = s:BASE . "_temp_list.txt"
 let g:VIMPROJECT_EXTERNAL_GREP = "grep -r -n %$ ."
 let g:VIMPROJECT_PATH_SEP = ''
+let g:VIMPROJECT_RESULTFILECMD = ":cfile <filename>\n:botright copen"
 
 " Find ourselves (the python file) in the runtime
 let s:PyName = "vimproject.py"
