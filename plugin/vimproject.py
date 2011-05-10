@@ -280,7 +280,7 @@ class project_t():
 		word = self.get_word_under_cursor()
 		if word is None:
 			return
-		self.do_grep(arg_list, ' >' + self.config.TEMP_LIST_NAME + ' 2>&1')
+		self.do_grep(arg_list + [word], ' >' + self.config.TEMP_LIST_NAME + ' 2>&1')
 		self.show_results()
 
 
