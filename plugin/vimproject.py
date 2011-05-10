@@ -287,8 +287,8 @@ class project_t():
 	#############################################################################
 	def do_grepargs(self, *arg_list):
 		self.do_grep(arg_list, ' >' + self.config.TEMP_LIST_NAME + ' 2>&1')
-		vim.command(':let @/=' + repr(arg_list[-1]))
 		self.show_results()
+		vim.command(':let @/=' + repr(arg_list[-1]))
 
 
 	#############################################################################
