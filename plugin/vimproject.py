@@ -24,6 +24,8 @@ if os.name == 'nt':
 else:
 	grepescape = grepescape_nix
 
+NO_ABS_FILENAME_IN_LIST = True
+
 ###################################################################################################
 class project_t():
 
@@ -155,8 +157,8 @@ class project_t():
 			dir_space_count = len(os.path.abspath(dir_name).split(os.sep)) * 2
 			for root_name, dir_name_list, file_name_list in os.walk(dir_name):
 				norm_root_name = os.path.normpath(root_name)
-				space_count = len(os.path.abspath(root_name).split(os.sep)) * 2 - dir_space_count + 2
-				explorer_appended = False
+				space_count = len(os.path.abspath(root_name).split(os.sep)) * 2 - dir_space_count + 4
+				flist = []
 				for file_name in file_name_list:
 					# decide if the file is needed into project
 					full_file_name = fnfilt(os.path.join(norm_root_name, file_name))
@@ -180,8 +182,8 @@ class project_t():
 					if needed:
 						if self.config.PATH_SEP:
 							abs_file_name = abs_file_name.replace(os.sep, self.config.PATH_SEP)
-						explorer_list += [' '*space_count + file_name + ' '*(self.config.PATH_START_POS-space_count-len(file_name)) + abs_file_name + '\n']
-						explorer_appended = True
+						absext = '' if NO_ABS_FILENAME_IN_LIST else ' '*(self.config.PATH_START_POS-space_count-len(file_name)) + abs_file_name
+						flist += [' '*space_count + file_name + absext + '\n']
 						grep_list += [abs_file_name.replace('\\','/') + '\0']
 						for ctags_mask in self.config.CTAGS_MASK_LIST:
 							if fnmatch.fnmatch(file_name,ctags_mask):
@@ -192,8 +194,14 @@ class project_t():
 								if fnmatch.fnmatch(file_name,cscope_mask):
 									cscope_list += [abs_file_name + '\n']
 									break
-				if explorer_appended:
-					explorer_list += ['-' * (self.config.PATH_START_POS + 20) + '\n']
+				if flist:
+					l = self.config.PATH_START_POS + 20
+					pth = os.path.normpath(root_name)
+					if self.config.PATH_SEP:
+						pth = pth.replace(os.sep, self.config.PATH_SEP)
+					head = '--{'+pth+'}'
+					head += '-'*(l - len(head)) + '\n'
+					explorer_list += [head] + flist
 		# write simple lists
 		self.write_list(explorer_list, self.config.EXPLORER_LIST_NAME)
 		self.write_list(grep_list, self.config.GREP_LIST_NAME)
@@ -231,14 +239,30 @@ class project_t():
 		vim.command(':setlocal nomodifiable cursorline nowrap bufhidden=delete')
 		vim.current.window.cursor = (1, 0)
 		# try to jump to the name of the file which was in the previous buffer
-		if not buf_full_name is None:
-			buf_full_name = buf_full_name.lower().replace(os.sep, self.config.PATH_SEP)
-			line_idx = 1
-			for line in vim.current.buffer[:]:
-				if line[self.config.PATH_START_POS:].lower()==buf_full_name:
-					vim.current.window.cursor = (line_idx, 0)
-					break
-				line_idx += 1
+		if buf_full_name:
+			if NO_ABS_FILENAME_IN_LIST:
+				cwd = vim.eval('getcwd()').lower()
+				buf_full_name = buf_full_name.lower().replace(os.sep, self.config.PATH_SEP)
+				buf_full_dir, buf_fn = os.path.split(buf_full_name)
+				try:
+					buf_rel_dir = os.path.relpath(buf_full_dir, cwd)
+				except ValueError: # may happen when paths are on different drives
+					buf_rel_dir = ''
+				if buf_rel_dir:
+					vim.current.window.cursor = (1, 1)
+					vim.command("setlocal ignorecase")
+					vim.eval("search('^--{" + buf_rel_dir.replace('\\', '\\\\') + "}-*$')")
+					line_idx = int(vim.eval(r"search('\(^\s*\)\@<=" + buf_fn + "$')"))
+					if line_idx:
+						vim.current.window.cursor = (line_idx, 1)
+					vim.command("setlocal ignorecase<")
+			else:
+				line_idx = 1
+				for line in vim.current.buffer[:]:
+					if line[self.config.PATH_START_POS:].lower()==buf_full_name:
+						vim.current.window.cursor = (line_idx, 0)
+						break
+					line_idx += 1
 		# remap esc, space, enter for this buffer
 		vim.command('noremap <buffer> <silent> <Esc> ' + exitcmd + '<CR>')
 		vim.command('map <buffer> <silent> <Space> <Esc>')
@@ -252,7 +276,12 @@ class project_t():
 			return
 		# set previous buffer so alternate will work
 		prev_buf_full_name = vim.eval(self.GLOBAL_PREV_BUFFER_NAME)
-		path = vim.current.line[self.config.PATH_START_POS:]
+		dirsepline = int(vim.eval("search('^--{.*}-*$', 'bn')"))
+		if not dirsepline:
+			return
+		pathdir = vim.current.buffer[dirsepline-1].strip('-').strip('{}')
+		pathfile = vim.current.line[:self.config.PATH_START_POS].strip()
+		path = os.path.normpath(os.path.join(pathdir, pathfile))
 		if prev_buf_full_name!='' and prev_buf_full_name!=path:
 			vim.command(':edit ' + prev_buf_full_name)
 		vim.command(':edit ' + path)
