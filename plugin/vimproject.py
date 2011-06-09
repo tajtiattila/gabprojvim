@@ -283,7 +283,7 @@ class project_t():
 		pathfile = vim.current.line[:self.config.PATH_START_POS].strip()
 		path = os.path.normpath(os.path.join(pathdir, pathfile))
 		if prev_buf_full_name!='' and prev_buf_full_name!=path:
-			vim.command(':edit ' + prev_buf_full_name)
+			vim.command(':silent edit ' + prev_buf_full_name)
 		vim.command(':edit ' + path)
 		# quit explorer
 
@@ -522,6 +522,7 @@ class project_t():
 
 	#############################################################################
 	def execute_command(self, command, in_shell=True):
+		print command
 		retcode = -1
 		output = ''
 		try:
