@@ -27,6 +27,9 @@ else:
 NO_ABS_FILENAME_IN_LIST = True
 
 ###################################################################################################
+def vimstr(s):
+	return "'" + s.replace("'", "''") + "'"
+
 class project_t():
 
 
@@ -222,6 +225,17 @@ class project_t():
 					return
 		# post cleanup
 		self.try_remove_file(self.config.TEMP_LIST_NAME)
+
+
+	#############################################################################
+	def do_fuzzyfindfile(self):
+		cwd = vim.eval('getcwd()').lower().replace('\\', '/')
+		def relpath(x):
+			return x[len(cwd)+1:] if x.lower().startswith(cwd) else x
+		with open(self.config.GREP_LIST_NAME) as f:
+			files = (relpath(x) for x in f.read().split('\0'))
+			vimliststr = '[' + ','.join((vimstr(x) for x in files)) + ']'
+		vim.command("call fuf#givenfile#launch('', 0, 'Project>', {0})".format(vimliststr))
 
 
 	#############################################################################

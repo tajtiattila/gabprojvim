@@ -52,6 +52,9 @@ command! ProjInit   silent python project.do_init()
 " enter project (show files)
 command! ProjEnter  silent python project.do_enter()
 
+" do fuzzy find on project files
+command! ProjFuf    silent python project.do_fuzzyfindfile()
+
 " grep
 command! ProjGrep   silent python project.do_grepcursor("".split())
 command! ProjGrepi  silent python project.do_grepcursor("-i".split())
@@ -70,6 +73,7 @@ command! -nargs=* Grep python project.do_grepargs(<f-args>)
 
 :map <unique> <LocalLeader>pi :ProjInit<CR>
 :map <unique> <LocalLeader>pe :ProjEnter<CR>
+:map <unique> <LocalLeader>pf :ProjFuf<CR>
 :map <unique> <LocalLeader>pg :ProjGrep<CR>
 :map <unique> <LocalLeader>pG :ProjGrepi<CR>
 :map <unique> <LocalLeader>ph :ProjGrepw<CR>
